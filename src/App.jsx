@@ -2,7 +2,7 @@ import Embed from "./Embed.jsx";
 import YouTube from "react-youtube";
 import GetVideoID from "./video_lookup.js";
 import { GetKeyframeInfo, GetNearestKeyframes } from "./keyframe_lookup.js";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const Info = ({label, value}) => {
   return(
@@ -12,6 +12,8 @@ const Info = ({label, value}) => {
     </div>
   )
 }
+
+let ytbPlayer = null;
 
 function App() {
   const [input, setInput] = useState('');
@@ -38,11 +40,23 @@ function App() {
     },
   };
 
-  const getCurrentFrame = (event) => {
-    const currentTime = event.target.getCurrentTime();
+  const getCurrentFrame = () => {
+    if (!ytbPlayer) return;
+    const currentTime = ytbPlayer.getCurrentTime();
     const currentFrame = Math.round(currentTime * fps);
     setCurrFrame(currentFrame);
   }
+
+  const storePlayer = (event) => {
+    ytbPlayer = event.target;
+  }
+
+  useEffect(() => {
+    const interval = setInterval(() => getCurrentFrame(), 1000 / fps);
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col justify-start place-items-center p-4 gap-4 h-screen">
@@ -50,7 +64,7 @@ function App() {
         <div className="flex flex-col gap-4">
           <label htmlFor="video" className="font-bold text-xl">Keyframe</label>
           <div className="grid grid-cols-2 gap-4">
-            <input type="text" id="video" placeholder="L0X_V0XX_XXX" className="bg-white p-4 rounded-lg"
+            <input type="text" id="video" placeholder="LXX_V0XX_XXX" className="bg-white p-4 rounded-lg"
                     value={input}
                     onChange={(e) => setInput(e.target.value.toUpperCase())}/>
             <div className="grid grid-cols-2">
@@ -64,7 +78,7 @@ function App() {
       </div>
       <div className="flex flex-col w-1/2 h-full gap-2">
         <div className="flex justify-between">
-          <Info label="Current Frame (Lazy)" value={currFrame} />
+          <Info label="Current Frame" value={currFrame} />
           <div className="flex gap-3">
             <div className="font-bold">Nearest keyframes</div>
             <div className="cursor-pointer text-blue-400" onClick={(e) => setInput(nearest_keyframes[2]) }>
@@ -82,9 +96,9 @@ function App() {
                     className="w-full h-full rounded-lg"
                     iframeClassName="w-full h-full rounded-lg"
                     opts={opts}
-                    onReady={getCurrentFrame}
-                    onPause={getCurrentFrame}
-                    onPlay={getCurrentFrame}
+                    onReady={storePlayer}
+                    onPause={storePlayer}
+                    onPlay={storePlayer}
           />
           // <Embed id={video_id} start={second && Math.floor(second)} className={"w-1/2 h-full rounded-lg"}/>
           :

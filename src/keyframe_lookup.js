@@ -29,6 +29,12 @@ const GetKeyframeInfo = (video_name, index) => {
 	return [parseInt(mapping["frame_idx"]), parseFloat(mapping["pts_time"]), parseFloat(mapping["fps"])];
 };
 
+const getFrame = (mapping, index) => {
+	if (index < 0 || index >= mapping.length) return -1;
+
+	return parseInt(mapping[index]["frame_idx"]);
+}
+
 const GetNearestKeyframes = (video_name, currentFrame) => {
 	const error = [null, null, null, null, null, null];
 
@@ -36,32 +42,33 @@ const GetNearestKeyframes = (video_name, currentFrame) => {
 	if (!mapping)
 		return error;
 
+	//Lower bound, get index of first element greater than X
 	let low = 0;
 	let high = mapping.length;
 
 	while (low < high) {
 		let mid = Math.floor(low + (high - low) / 2);
-
-		const mid_keyframe = parseInt(mapping[mid]["frame_idx"]);
 		
-		if (currentFrame <= mid_keyframe)
+		if (currentFrame <= getFrame(mapping, mid))
 			high = mid;
 		else
 			low = mid + 1;
 	}
 
-	if (low < mapping.length && parseInt(mapping[low]["frame_idx"]) < currentFrame)
+	if (low < mapping.length && getFrame(mapping, low) < currentFrame)
 		low++;
 
-	if (low <= 0) 
-		low = 1;
+	low--;
+	if (low < 0) low = 0;
 
 	let next = low + 1;
-	if (parseInt(mapping[next - 1]["frame_idx"]) == currentFrame)
+	if (getFrame(mapping, next) == currentFrame)
 		next++;
 
-	return [low, mapping[low - 1]["frame_idx"], `${video_name}_${String(low).padStart(3, '0')}`,
-			next, mapping[next - 1]["frame_idx"], `${video_name}_${String(next).padStart(3, '0')}`];
+	if (next >= mapping.length) next = mapping.length - 1;
+
+	return [low + 1, getFrame(mapping, low), `${video_name}_${String(low + 1).padStart(3, '0')}`,
+			next + 1, getFrame(mapping, next), `${video_name}_${String(next + 1).padStart(3, '0')}`];
 };
 
 export {
