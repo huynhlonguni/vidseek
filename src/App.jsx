@@ -1,6 +1,7 @@
 import Embed from "./Embed.jsx";
+import YouTube from "react-youtube";
 import GetVideoID from "./video_lookup.js";
-import GetKeyframeInfo from "./keyframe_lookup.js";
+import { GetKeyframeInfo, GetNearestKeyframes } from "./keyframe_lookup.js";
 import { useState } from "react";
 
 const Info = ({label, value}) => {
@@ -14,6 +15,7 @@ const Info = ({label, value}) => {
 
 function App() {
   const [input, setInput] = useState('');
+  const [currFrame, setCurrFrame] = useState(null);
 
   const regex = /(L\d{2}_V\d{3})(?:_(\d{3}))?/g;
   const match = regex.exec(input);
@@ -22,10 +24,25 @@ function App() {
   const keyframe = match ? match[2] : null;
 
   const info = GetKeyframeInfo(video, keyframe);
-  const frame = info[0] == -1 ? null : info[0];
-  const second = info[1] == -1 ? null : info[1];
+  const frame = info[0];
+  const second = info[1];
+  const fps = info[2] ?? 25.0;
 
   const video_id = GetVideoID(video);
+
+  const nearest_keyframes = GetNearestKeyframes(video, currFrame);
+
+  const opts = {
+    playerVars: {
+      start: Math.floor(second)
+    },
+  };
+
+  const getCurrentFrame = (event) => {
+    const currentTime = event.target.getCurrentTime();
+    const currentFrame = Math.round(currentTime * fps);
+    setCurrFrame(currentFrame);
+  }
 
   return (
     <div className="flex flex-col justify-start place-items-center p-4 gap-4 h-screen">
@@ -45,17 +62,42 @@ function App() {
           </div>
         </div>
       </div>
-      {
-        video && video_id ? 
-          <Embed id={video_id} start={second && Math.floor(second)} className={"w-1/2 h-full rounded-lg"}/>
+      <div className="flex flex-col w-1/2 h-full gap-2">
+        <div className="flex justify-between">
+          <Info label="Current Frame (Lazy)" value={currFrame} />
+          <div className="flex gap-3">
+            <div className="font-bold">Nearest keyframes</div>
+            <div className="cursor-pointer text-blue-400" onClick={(e) => setInput(nearest_keyframes[2]) }>
+              {nearest_keyframes[2]}
+            </div>
+            <div className="cursor-pointer text-blue-400" onClick={(e) => setInput(nearest_keyframes[5]) }>
+              {nearest_keyframes[5]}
+            </div>
+          </div>
+        </div>
+        <div className="w-full h-full">
+        {
+          video && video_id ? 
+          <YouTube videoId={video_id}
+                    className="w-full h-full rounded-lg"
+                    iframeClassName="w-full h-full rounded-lg"
+                    opts={opts}
+                    onReady={getCurrentFrame}
+                    onPause={getCurrentFrame}
+                    onPlay={getCurrentFrame}
+          />
+          // <Embed id={video_id} start={second && Math.floor(second)} className={"w-1/2 h-full rounded-lg"}/>
           :
-          <div className="w-1/2 h-full rounded-lg bg-slate-400 flex justify-center font-bold text-2xl text-slate-700 place-items-center">
+          <div className="w-full h-full rounded-lg bg-slate-400 flex justify-center font-bold text-2xl text-slate-700 place-items-center">
             {
               !video ? 'Waiting for input'
               : !video_id ? 'Video not found' : ''   
             }
           </div>
-      }
+        }
+        </div>
+      </div>
+      
     </div>
   );
 }
