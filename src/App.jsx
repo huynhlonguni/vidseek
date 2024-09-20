@@ -28,16 +28,16 @@ function App() {
   const info = GetKeyframeInfo(video, keyframe);
   const frame = info[0];
   const second = info[1];
-  const fps = info[2] ?? 25.0;
+  const fps = info[2] ?? GetKeyframeInfo(video, 1)[2] ?? 25.0;
 
   const video_id = GetVideoID(video);
 
   const nearest_keyframes = GetNearestKeyframes(video, currFrame);
 
   const opts = {
-    playerVars: {
-      start: Math.floor(second)
-    },
+    // playerVars: {
+    //   start: Math.floor(second)
+    // },
   };
 
   const getCurrentFrame = () => {
@@ -56,7 +56,13 @@ function App() {
     return () => {
       clearInterval(interval);
     };
-  }, []);
+  }, [video]);
+
+  useEffect(() => {
+    if (!second || !ytbPlayer) return;
+
+    ytbPlayer.seekTo(second);
+  }, [second]);
 
   return (
     <div className="flex flex-col justify-start place-items-center p-4 gap-4 h-screen">
