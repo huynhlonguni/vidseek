@@ -19,6 +19,7 @@ function App() {
   const [input, setInput] = useState('');
   const [currFrame, setCurrFrame] = useState(null);
 
+
   const regex = /(L\d{2}_V\d{3})(?:_(\d{3}))?/g;
   const match = regex.exec(input);
   
@@ -34,12 +35,6 @@ function App() {
 
   const nearest_keyframes = GetNearestKeyframes(video, currFrame);
 
-  const opts = {
-    // playerVars: {
-    //   start: Math.floor(second)
-    // },
-  };
-
   const getCurrentFrame = () => {
     if (!ytbPlayer) return;
     const currentTime = ytbPlayer.getCurrentTime();
@@ -49,20 +44,27 @@ function App() {
 
   const storePlayer = (event) => {
     ytbPlayer = event.target;
+
+    if (second) {
+      ytbPlayer.seekTo(second);
+      // ytbPlayer.pauseVideo();
+    }
   }
 
   useEffect(() => {
     const interval = setInterval(() => getCurrentFrame(), 1000 / fps);
     return () => {
       clearInterval(interval);
+      ytbPlayer = null;
     };
-  }, [video]);
+  }, [video_id]);
 
   useEffect(() => {
     if (!second || !ytbPlayer) return;
 
+    console.log("Seek", second);
     ytbPlayer.seekTo(second);
-  }, [second]);
+  }, [video_id, second]);
 
   return (
     <div className="flex flex-col justify-start place-items-center p-4 gap-4 h-screen">
@@ -101,10 +103,9 @@ function App() {
           <YouTube videoId={video_id}
                     className="w-full h-full rounded-lg"
                     iframeClassName="w-full h-full rounded-lg"
-                    opts={opts}
                     onReady={storePlayer}
-                    onPause={storePlayer}
-                    onPlay={storePlayer}
+                    // onPause={storePlayer}
+                    // onPlay={storePlayer}
           />
           // <Embed id={video_id} start={second && Math.floor(second)} className={"w-1/2 h-full rounded-lg"}/>
           :
